@@ -10,7 +10,6 @@ min  f(x) = 0.5 * x' * Q0 * x + c0' * x + r0
 s.t. g_i(x) = 0.5 * x' * Qi * x + ci' * x + r0 <= 0 for all i = 1, .., p
       h1(x) = A1*x - b1 <= 0
       h2(x) = A2*x - b2 == 0
-      L <= x <= U
       x_i integer for all i in I
 ```
 
