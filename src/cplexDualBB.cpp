@@ -32,6 +32,9 @@ void BranchCallback::parseJson(std::string& filename) {
     std::vector<double> c0_tmp               = j["c0"];
     std::vector<double> b1_tmp               = j["b1"];
     std::vector<double> b2_tmp2              = j["b2"];
+    if (j.find("r0") != j.end()) {
+        r0 = j["r0"];
+    }
 
     // Initialize the blaze matrices and vectors
     Q0  = BMat(n, n, helpers::flatten(Q0_tmp).data());
@@ -206,7 +209,7 @@ BranchCallback::BranchCallback(IloNumVarArray _x, std::string filename,
 }
 
 void BranchCallback::invoke(IloCplex::Callback::Context const& context) {
-    //std::cout << "Hi from Callback! \n";
+    // std::cout << "Hi from Callback! \n";
     if (context.inLocalProgress() || context.inCandidate()) {
         logIncumbents(context);
     }
