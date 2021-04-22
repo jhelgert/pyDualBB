@@ -1,15 +1,20 @@
+#ifndef CPLEX_DUALBB_HPP
+#define CPLEX_DUALBB_HPP
+
 // Jonathan Helgert (jhelgert@mail.uni-mannheim.de)
 
-#include "Helpers.hpp"
 #include <blaze/Math.h>
-#include <cmath>
 #include <ilconcert/ilothread.h>
 #include <ilcplex/ilocplex.h>
+
+#include <cmath>
 #include <limits>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <tuple>
 #include <vector>
+
+#include "Helpers.hpp"
 
 // Since CPLEX already uses multiple threads,
 // we should to enforce the serial execution of some BLAZE operations,
@@ -17,17 +22,17 @@
 #define BLAZE_USE_SHARED_MEMORY_PARALLELIZATION 0
 
 // Aliases
-using BVec = blaze::DynamicVector<double>;
+using BVec    = blaze::DynamicVector<double>;
 using BVecIdx = blaze::DynamicVector<size_t>;
-using BMat = blaze::DynamicMatrix<double>;
-using json = nlohmann::json;
+using BMat    = blaze::DynamicMatrix<double>;
+using json    = nlohmann::json;
 
 /**
  * @brief Implementation of the dualBB algorithm via generic Callback
  *
  */
 class BranchCallback : public IloCplex::Callback::Function {
-  private:
+   private:
     // Cplex data
     IloNumVarArray x;
     int calls;
@@ -38,10 +43,10 @@ class BranchCallback : public IloCplex::Callback::Function {
     IloFastMutex lck{};
     // ----
     // Relaxed QCQP data:
-    size_t n{0};  //< number of primal variables
-    size_t p{0};  //< number of quadratic inequality constraints
-    size_t m1{0}; //< number of affin-linear inequality constraints
-    size_t m2{0}; //< number of affin-linear equality constraints
+    size_t n{0};   //< number of primal variables
+    size_t p{0};   //< number of quadratic inequality constraints
+    size_t m1{0};  //< number of affin-linear inequality constraints
+    size_t m2{0};  //< number of affin-linear equality constraints
     // Primal objective function: 0.5*x' * Q0 * x + c0' * x + r0
     BMat Q0;
     BVec c0;
@@ -54,7 +59,7 @@ class BranchCallback : public IloCplex::Callback::Function {
     // Primal affin-linear ineq. constraint
     // h_1(x) = A1 * x - b1 <= 0
     BMat A1;
-    BMat A1T; // transpose of A1
+    BMat A1T;  // transpose of A1
     BVec b1;
     // Primal affin-linear eq. constraint
     // h_2(x) = A2 * x - b2 == 0
@@ -85,12 +90,12 @@ class BranchCallback : public IloCplex::Callback::Function {
 
     void logIncumbents(IloCplex::Callback::Context const& context);
 
-  public:
-    BranchCallback() = delete;
-    BranchCallback(BranchCallback& other) = delete;
+   public:
+    BranchCallback()                       = delete;
+    BranchCallback(BranchCallback& other)  = delete;
     BranchCallback(BranchCallback&& other) = delete;
     BranchCallback& operator=(BranchCallback&& other) = delete;
-    ~BranchCallback() = default;
+    ~BranchCallback()                                 = default;
 
     BranchCallback(IloNumVarArray _x, std::string filename,
                    std::vector<double>& _alphas_tmp, double _startTime);
@@ -100,3 +105,5 @@ class BranchCallback : public IloCplex::Callback::Function {
     int getBranches() const;
     std::vector<std::tuple<double, double>> getIncumbentsAndTimings() const;
 };
+
+#endif // Header guard CPLEX_DUALBB_HPP
