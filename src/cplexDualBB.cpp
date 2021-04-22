@@ -196,8 +196,14 @@ void BranchCallback::logIncumbents(IloCplex::Callback::Context const& context) {
 
 BranchCallback::BranchCallback(IloNumVarArray _x, std::string filename,
                                std::vector<double>& _alphas_tmp,
-                               double _startTime)
-    : x(_x), calls(0), branches(0) {
+                               double _startTime,
+                               bool _only_single_branch       = false,
+                               size_t _dual_branching_threads = 4)
+    : x(_x),
+      calls(0),
+      branches(0),
+      only_single_branch(_only_single_branch),
+      dual_branching_threads(_dual_branching_threads) {
     // Parse the matrices from the json file
     parseJson(filename);
     // Read the lagrangian multipliers alpha
@@ -221,7 +227,8 @@ void BranchCallback::invoke(IloCplex::Callback::Context const& context) {
 
     // Only run the callback for half of the threads. The other half of threads
     // is used by cplex's branching decisions
-    if (context.getLongInfo(IloCplex::Callback::Context::Info::ThreadId) >= 5) {
+    if (context.getLongInfo(IloCplex::Callback::Context::Info::ThreadId) >=
+        dual_branching_threads) {
         return;
     }
 
@@ -240,16 +247,7 @@ void BranchCallback::invoke(IloCplex::Callback::Context const& context) {
     // Get the thread id
     auto tid = context.getLongInfo(IloCplex::Callback::Context::Info::ThreadId);
 
-    // double obj = context.getRelaxationObjective();
-
     // Get the active bounds of the current node relaxation
-
-    // Contains the variable values for the current node relaxation.
-    IloNumArray v(context.getEnv());
-
-    lck.lock();  // Start lock for variable object x
-    // Write the values of the variables x into v
-    context.getRelaxationPoint(x, v);
 
     // Create the new child nodes
 
@@ -263,8 +261,12 @@ void BranchCallback::invoke(IloCplex::Callback::Context const& context) {
     bool can_branch = false;
     size_t branch_idx;
 
-    // std::cout << "Hi before creating A2_tmp / b2_tmp \n";
-    // std::cout << "x.size() = " << x.getSize() << "\n";
+    // Contains the variable values for the current node relaxation.
+    IloNumArray v(context.getEnv());
+
+    lck.lock();  // Start lock for variable object x
+    // Write the values of the variables x into v
+    context.getRelaxationPoint(x, v);
 
     size_t k             = 0;
     constexpr double eps = 1.0e-5;
@@ -296,13 +298,6 @@ void BranchCallback::invoke(IloCplex::Callback::Context const& context) {
         return;
     }
 
-    // std::cout << "Hi before incorporating x[branch_indx] into A2, b2\n";
-    // std::cout << "m2 = " << m2 << ", k = " << k
-    //           << ", branch_indx = " << branch_idx << "\n";
-
-    // std::cout << A2_tmp_up.rows() << ", " << A2_tmp_up.columns() << "\n";
-    // std::cout << A2_tmp_down.rows() << ", " << A2_tmp_down.columns() << "\n";
-
     // We branch on x[branch_indx], incorporate it into A2, b2
     double val_up                   = std::ceil(v[branch_idx]);
     double val_down                 = std::floor(v[branch_idx]);
@@ -310,8 +305,6 @@ void BranchCallback::invoke(IloCplex::Callback::Context const& context) {
     A2_tmp_down(m2 + k, branch_idx) = 1.0;
     b2_tmp_up[m2 + k]               = val_up;
     b2_tmp_down[m2 + k]             = val_down;
-
-    // std::cout << "Hi before transforming A2 to full rank\n";
 
     // Transform A2_up, A2_down to full rank
     BMat A2_tmp_up_T   = blaze::trans(A2_tmp_up);
@@ -326,41 +319,38 @@ void BranchCallback::invoke(IloCplex::Callback::Context const& context) {
     auto b2_up   = BVec(blaze::elements(b2_tmp_up, jb_up));
     auto b2_down = BVec(blaze::elements(b2_tmp_down, jb_down));
 
-    // std::cout << "Hi before findBestDualBound()\n";
-
     // Calculate the dual bounds for each new child's relaxation
     auto dualBound_up   = findBestDualBound(A2_up, b2_up);
     auto dualBound_down = findBestDualBound(A2_down, b2_down);
 
-    // Branching, i.e. create two new child nodes
+    if (!only_single_branch) {
+        // Branching, i.e. create two new child nodes
+        context.makeBranch(branchVar, val_up, IloCplex::BranchUp, dualBound_up);
+        lck.lock();
+        ++branches;
+        lck.unlock();
 
-    // std::cout << "Hi before makeBranch()\n";
-
-    context.makeBranch(branchVar, val_up, IloCplex::BranchUp, dualBound_up);
-    lck.lock();
-    ++branches;
-    lck.unlock();
-
-    context.makeBranch(branchVar, val_down, IloCplex::BranchDown,
-                       dualBound_down);
-    lck.lock();
-    ++branches;
-    lck.unlock();
-
-    // Only create child node for the node with better dual bound:
-
-    // if (dualBound_up < dualBound_down) {
-    //     context.makeBranch(branchVar, val_up, IloCplex::BranchUp,
-    //     dualBound_up); lck.lock();
-    //     ++branches;
-    //     lck.unlock();
-    // } else {
-    //     context.makeBranch(branchVar, val_down, IloCplex::BranchDown,
-    //                        dualBound_down);
-    //     lck.lock();
-    //     ++branches;
-    //     lck.unlock();
-    // }
+        context.makeBranch(branchVar, val_down, IloCplex::BranchDown,
+                           dualBound_down);
+        lck.lock();
+        ++branches;
+        lck.unlock();
+    } else {
+        // Create new child node only for the node with better dual bound:
+        if (dualBound_up < dualBound_down) {
+            context.makeBranch(branchVar, val_up, IloCplex::BranchUp,
+                               dualBound_up);
+            lck.lock();
+            ++branches;
+            lck.unlock();
+        } else {
+            context.makeBranch(branchVar, val_down, IloCplex::BranchDown,
+                               dualBound_down);
+            lck.lock();
+            ++branches;
+            lck.unlock();
+        }
+    }
 
     // Prune the current node if .... ?
     // context.pruneCurrentNode();

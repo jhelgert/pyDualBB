@@ -41,6 +41,8 @@ class BranchCallback : public IloCplex::Callback::Function {
     double lastIncumbent;
     std::vector<std::tuple<double, double>> incumbentsInfo;
     IloFastMutex lck{};
+    bool only_single_branch;
+    size_t dual_branching_threads;
     // ----
     // Relaxed QCQP data:
     size_t n{0};   //< number of primal variables
@@ -98,7 +100,8 @@ class BranchCallback : public IloCplex::Callback::Function {
     ~BranchCallback()                                 = default;
 
     BranchCallback(IloNumVarArray _x, std::string filename,
-                   std::vector<double>& _alphas_tmp, double _startTime);
+                   std::vector<double>& _alphas_tmp, double _startTime,
+                   bool _only_single_branch, size_t _dual_branching_threads);
 
     void invoke(IloCplex::Callback::Context const& context) override;
     int getCalls() const;
@@ -106,4 +109,4 @@ class BranchCallback : public IloCplex::Callback::Function {
     std::vector<std::tuple<double, double>> getIncumbentsAndTimings() const;
 };
 
-#endif // Header guard CPLEX_DUALBB_HPP
+#endif  // Header guard CPLEX_DUALBB_HPP

@@ -2,7 +2,7 @@ from ._cplex_dualbb_wrapper import solveCplex
 
 
 def cplex(problem_file, options=None):
-    """Calls the dualBB algorithm
+    """Calls the default cplex solver
 
     Args:
         problem_file (str): Path to the problem file (.lp / .mps / .mps.gz)
@@ -14,7 +14,7 @@ def cplex(problem_file, options=None):
     """
     if options is None:
         cplex_options = {
-            "mip_strategy_nodeselect": 1,  # depth-first search
+            "mip_strategy_nodeselect": 1,  # best bound search
             "mip_strategy_search": 0,  # let cplex choose
             "mip_strategy_heuristiceffort": 1,  # default
             "timelimit": 2**31-1  # default

@@ -1,7 +1,7 @@
 from ._cplex_dualbb_wrapper import solveDualBB, py_dict_example
 
 
-def dualBB(problem_file, json_file, alpha_vals, options=None):
+def dualBB(problem_file, json_file, alpha_vals, options=None, only_single_branch=False, dual_branching_threads=4):
     """Calls the dualBB algorithm
 
     Args:
@@ -16,7 +16,7 @@ def dualBB(problem_file, json_file, alpha_vals, options=None):
     """
     if options is None:
         cplex_options = {
-            "mip_strategy_nodeselect": 1,  # depth-first search
+            "mip_strategy_nodeselect": 2,  # best estimate search
             "mip_strategy_search": 0,  # let cplex choose
             "mip_strategy_heuristiceffort": 1,  # default
             "timelimit": 2**31-1  # default
@@ -24,4 +24,5 @@ def dualBB(problem_file, json_file, alpha_vals, options=None):
     else:
         cplex_options = options
     # Call the C++ method
-    return solveDualBB(problem_file, json_file, alpha_vals, cplex_options)
+    return solveDualBB(problem_file, json_file, alpha_vals,
+                       cplex_options, _only_single_branch=only_single_branch, _dual_branching_threads=dual_branching_threads)

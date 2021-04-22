@@ -37,7 +37,9 @@ inline py::array_t<T> toPyArray(std::vector<T>&& passthrough) {
 
 py::tuple solveDualBB(std::string problem_file, std::string json_file,
                       py::array_t<double> _alpha_vals,
-                      std::map<std::string, int>& cplex_options) {
+                      std::map<std::string, int>& cplex_options,
+                      bool _only_single_branch       = false,
+                      size_t _dual_branching_threads = 4) {
     // Create STL vector from numpy array
     std::vector<double> alpha_vals(_alpha_vals.data(),
                                    _alpha_vals.data() + _alpha_vals.size());
@@ -71,7 +73,8 @@ py::tuple solveDualBB(std::string problem_file, std::string json_file,
 
     // Register the dualBB callback function and read all the problem matrices
     // etc from the json_file
-    BranchCallback cb(x, json_file, alpha_vals, start_time);
+    BranchCallback cb(x, json_file, alpha_vals, start_time, _only_single_branch,
+                      _dual_branching_threads);
 
     // Set the different contexts where our callback gets invoked
     cplex.use(&cb, IloCplex::Callback::Context::Id::Branching |
@@ -81,12 +84,8 @@ py::tuple solveDualBB(std::string problem_file, std::string json_file,
     // solve the model
     cplex.solve();
 
-    std::cout << "hi after solve()\n";
-
     // total runtime
     double total_time = cplex.getCplexTime() - start_time;
-
-    std::cout << "hi before getIncumbentsAndTimings()\n";
 
     // Extract all the incumbent objective values and the runtimes
     // Extract the incumbents and the runtimes
@@ -102,12 +101,8 @@ py::tuple solveDualBB(std::string problem_file, std::string json_file,
 
     std::string status(buffer.str());
 
-    std::cout << "hi before env.end()\n";
-
     // End cplex model object lifetime
     env.end();
-
-    std::cout << "hi bevore py::make_tuple()\n";
 
     // Create python tuple
     return py::make_tuple(status, total_time,
@@ -152,12 +147,8 @@ py::tuple solveCplex(std::string problem_file,
     // solve the model
     cplex.solve();
 
-    std::cout << "hi after solve()\n";
-
     // total runtime
     double total_time = cplex.getCplexTime() - start_time;
-
-    std::cout << "hi before getIncumbentsAndTimings()\n";
 
     // Extract all the incumbent objective values and the runtimes
     // Extract the incumbents and the runtimes
@@ -173,12 +164,8 @@ py::tuple solveCplex(std::string problem_file,
 
     std::string status(buffer.str());
 
-    std::cout << "hi before env.end()\n";
-
     // End cplex model object lifetime
     env.end();
-
-    std::cout << "hi bevore py::make_tuple()\n";
 
     // Create python tuple
     return py::make_tuple(status, total_time,
@@ -195,7 +182,10 @@ void py_dict_example(std::map<std::string, int>& options) {
 
 PYBIND11_MODULE(_cplex_dualbb_wrapper, m) {
     m.def("solveDualBB", &solveDualBB,
-          "Solves a convex MIQCQP by the dualBB algorithm.");
+          "Solves a convex MIQCQP by the dualBB algorithm.",
+          py::arg("problem_file"), py::arg("json_file"), py::arg("_alpha_vals"),
+          py::arg("cplex_options"), py::arg("_only_single_branch") = false,
+          py::arg("_dual_branching_threads") = 4);
     m.def("solveCplex", &solveCplex,
           "Solves a convex MIQCQP by Cplex and logs each found incumbent");
     m.def("py_dict_example", &py_dict_example, "bla bla");
