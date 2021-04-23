@@ -323,6 +323,16 @@ void BranchCallback::invoke(IloCplex::Callback::Context const& context) {
     auto dualBound_up   = findBestDualBound(A2_up, b2_up);
     auto dualBound_down = findBestDualBound(A2_down, b2_down);
 
+    double smaller_dual_obj =
+        dualBound_up < dualBound_down ? dualBound_up : dualBound_down;
+
+    // Only branch if the smaller dual bound is lower than the upper bound
+    // for the incumbent objective
+    if (smaller_dual_obj >= context.getIncumbentObjective()) {
+        context.pruneCurrentNode();
+        return;
+    }
+
     if (!only_single_branch) {
         // Branching, i.e. create two new child nodes
         context.makeBranch(branchVar, val_up, IloCplex::BranchUp, dualBound_up);
@@ -351,9 +361,6 @@ void BranchCallback::invoke(IloCplex::Callback::Context const& context) {
             lck.unlock();
         }
     }
-
-    // Prune the current node if .... ?
-    // context.pruneCurrentNode();
 }
 
 int BranchCallback::getCalls() const {
