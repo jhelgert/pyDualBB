@@ -328,10 +328,14 @@ void BranchCallback::invoke(IloCplex::Callback::Context const& context) {
 
     // Only branch if the smaller dual bound is lower than the upper bound
     // for the incumbent objective
-    if (smaller_dual_obj >= context.getIncumbentObjective()) {
-        context.pruneCurrentNode();
-        return;
-    }
+    //
+    // Note: this won't work since it is not compatible with CPLEX'
+    // dynamic search, our chosen variable branching rule and the
+    // number of dual_branching threads.
+    // if (smaller_dual_obj >= context.getIncumbentObjective()) {
+    //     context.pruneCurrentNode();
+    //     return;
+    // }
 
     if (!only_single_branch) {
         // Branching, i.e. create two new child nodes
