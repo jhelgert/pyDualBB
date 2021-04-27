@@ -65,6 +65,8 @@ alphas = np.array([0.01, 0.025, 0.05, 0.1, 0.2, 0.95])
 dualbb_threads = 4
 
 status, total_runtime, incumbents, incRuntimes = dualBB(problem_file, json_file, alphas, options=cplex_options_dualbb, dual_branching_threads=dualbb_threads)
+
+# Always cut-off the branch with higher dual bound (only for demonstration purposes!)
 status, total_runtime, incumbents, incRuntimes = dualBB(problem_file, json_file, alphas, options=cplex_options_dualbb, only_single_branch=True, dual_branching_threads=dualbb_threads)
 ```
 
