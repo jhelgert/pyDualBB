@@ -20,7 +20,7 @@ endif()
 
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
-find_package(CPLEX REQUIRED)
+find_package(Cplex REQUIRED)
 include(Blaze)
 include(nlohmann-json)
 include(pybind11)
