@@ -1,5 +1,7 @@
 # pyDualBB
 
+[![CodeFactor](https://www.codefactor.io/repository/github/jhelgert/pydualbb/badge)](https://www.codefactor.io/repository/github/jhelgert/pydualbb)
+
 This python module provides python bindings for a so-called *dual Branch-and-Bound*
 (dualBB) algorithm in order to solve convex mixed-integer quadratically
 constrained quadratic programs of the form:
