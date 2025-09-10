@@ -1,27 +1,23 @@
 # pyDualBB
 
-[![CodeFactor](https://www.codefactor.io/repository/github/jhelgert/pydualbb/badge)](https://www.codefactor.io/repository/github/jhelgert/pydualbb)
-
 This python module provides python bindings for a so-called *dual Branch-and-Bound*
 (dualBB) algorithm in order to solve convex mixed-integer quadratically
 constrained quadratic programs of the form:
 
+```math
+\begin{align*}
+\min_{x} f(x) &= \frac12 x^\top Q_0 x + c_0^\top x + r_0 \\
+\text{s.t.} \quad g_k(x) &= \frac12 x^\top Q_k x + c_k^\top x + r_k \leq 0 \quad \forall k = 1,\ldots, p \\
+      h_1(x) &= A_1 x - b_1 \leq 0 \\
+      h_2(x) &= A_2 x - b_2 = 0 \\
+        x_i &\in \mathbb{Z} \quad \forall i \in I
+\end{align*}
 ```
-min  f(x) = 0.5 * x' * Q0 * x + c0' * x + r0
- x
-s.t. g_i(x) = 0.5 * x' * Qi * x + ci' * x + r0 <= 0 for all i = 1, .., p
-      h1(x) = A1*x - b1 <= 0
-      h2(x) = A2*x - b2 == 0
-      x_i integer for all i in I
-```
 
-for a small number `p`, i.e. a small number of quadratic constraints.
-
-Here,
-
-- all the matrices `Q0`, ... `Qp` are assumed to be symmetric positive definite,
-i.e. `f` and `g_i` are strictly convex.
-- the matrices `A1` and `A2` have dimensions `(m1, n)` and `(m2,n)` with `m2 <= n` and `A2` has full rank.
+for a small number $p$ of quadratic constraints. Note that,
+- all the matrices $Q_0$, ... $Q_p$ are assumed to be symmetric positive definite, which implies that the functions $f, g_1, \ldots, g_p$ are strictly convex.
+- $A_1 \in \mathbb{R}^{m_1 \times n}$, $A_2 \in \mathbb{R}^{m_2 \times n}$ and $m_2 \leq n$.
+- the matrix $A_2$ has full rank.
 
 The algorithm is a multi-threaded and high-performance version of the original
 implementation. See [here](https://link.springer.com/chapter/10.1007%2F978-3-030-48439-2_15) for a detailed description of the algorithm.
